@@ -3,6 +3,10 @@ library(readr)
 library(dplyr)
 library(ggplot2)
 library(skimr)
+library(broom)
+library(Metrics)
+library(corrplot)
+library(caret)
 train <- read_csv("train.csv")
 
 train <-
@@ -41,7 +45,19 @@ train %>% ggplot(aes(x = Pclass, y = SibSp, color = Survived)) + geom_boxplot()
 train %>% filter(Pclass == 1) %>%  ggplot(aes(x = Pclass, y = Fare, color = Survived)) + geom_boxplot()
 train %>% filter(Pclass != 1) %>%  ggplot(aes(x = Pclass, y = Fare, color = Survived)) + geom_boxplot()
 
+correlations <-  train %>% select(everything(), - PassengerId, - Ticket, - Name, - Cabin) %>%  cor()
 
+corrplot(correlations, method = "circle")
+
+pairs(train, col=train$Survived)
+
+x <- train %>% select(everything(), - PassengerId, - Ticket, - Name, - Cabin, - Survived)
+y <- train %>% select(Survived)
+
+scales <- list(x=list(relation="free"),y = list(relation= "free"))
+featureplot(x=x, y=y, plot = "density", scales=scales)
+
+scales
 model <-
   glm(
     Survived ~ . - PassengerId - Ticket - Name - Cabin,
@@ -49,4 +65,8 @@ model <-
     family = "binomial"
   )
 summary(model)
+
+#To reduce the number of predictors I need to look at the following
+# AIC, Bayesian IC, 
 glm.fit <- predict(model, train, type = "response")
+
